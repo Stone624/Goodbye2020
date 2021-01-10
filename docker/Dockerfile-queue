@@ -1,0 +1,18 @@
+FROM php:7.4
+
+RUN apt-get update -y && apt-get install -y openssl zip unzip git libonig-dev libicu-dev
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+RUN docker-php-ext-install pdo mbstring mysqli pdo_mysql intl
+RUN pecl install -o -f redis \
+&&  rm -rf /tmp/pear \
+&&  docker-php-ext-enable redis
+
+WORKDIR /app/
+COPY . /app/
+RUN composer install
+RUN php artisan config:clear \
+    && composer dump-autoload \
+    && php artisan route:clear \
+    && php artisan view:clear
+
+ENTRYPOINT ["php", "artisan", "queue:work", "--tries=5"]

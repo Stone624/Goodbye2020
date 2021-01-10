@@ -1,0 +1,8 @@
+# Docker Stripe CLI Listener . Will listen for triggers from Stripe CLI and
+docker run --network="host" --rm -it stripe/stripe-cli listen --forward-to https://localhost/stripe/webhook --skip-verify \
+    --api-key sk_test_key
+
+#
+docker build .
+docker run [-v path_to_fixture.json:/stripe/test_fixture.json] --rm -it 2acfdb050cbd fixtures /stripe/test_fixture.json \
+--api-key sk_test_key

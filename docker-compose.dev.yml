@@ -1,0 +1,63 @@
+# NOTE : Build will fail if Environment Variable for Dockerfile / Image / Container Name is DNE . Need to pass through.
+# https://stackoverflow.com/questions/52429984/docker-compose-build-environment-variable
+# Note: If your service specifies a build option, variables defined in environment are not automatically visible during the build. Use the args sub-option of build to define build-time environment variables.
+# NOTE 2 : MAKE SURE IMAGE ENV VARIABLE IS LOWER CASE !!!
+version: '3'
+services:
+  redis-service:
+    image: redis
+    ports:
+    - "6379:6379"
+  mysql-service:
+    image: mysql
+    ports:
+    - "3306:3306"
+    environment:
+      MYSQL_DATABASE: '${DB_DATABASE}'
+      MYSQL_ROOT_PASSWORD: '${DB_PASSWORD}'
+      MYSQL_USER: '${DB_USERNAME}'
+      MYSQL_PASSWORD: '${DB_PASSWORD}'
+
+  web-service:
+    image: ${PROJECT_NAME}-web
+    container_name: ${PROJECT_NAME}-web 
+    build:
+      context: .
+      dockerfile: docker/Dockerfile-web
+      args:
+        PROJECT_DOMAIN: ${PROJECT_NAME}
+        PROJECT_DOMAIN: ${PROJECT_DOMAIN}
+    ports:
+    - "80:80"
+    - "443:443"
+    volumes:
+    - ./:/app/
+    depends_on:
+    - redis-service
+    - mysql-service
+    environment:
+      CONTAINER_ROLE: web-server
+
+  Goodbye2020-scheduler-service:
+    image: ${PROJECT_NAME}-scheduler
+    container_name: ${PROJECT_NAME}-scheduler
+    build:
+      context: .
+      dockerfile: docker/Dockerfile-scheduler
+    volumes:
+      - ./:/app/
+    environment:
+      CONTAINER_ROLE: Scheduler
+
+  Goodbye2020-queue-service:
+    image: ${PROJECT_NAME}-queue
+#    container_name: queue
+    deploy:
+      replicas: 2
+    build:
+      context: .
+      dockerfile: docker/Dockerfile-queue
+    volumes:
+      - ./:/app/
+    environment:
+      CONTAINER_ROLE: Queue-worker

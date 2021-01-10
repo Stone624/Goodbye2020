@@ -1,0 +1,3 @@
+FROM stripe/stripe-cli
+
+COPY test_fixture.json /stripe/test_fixture.json

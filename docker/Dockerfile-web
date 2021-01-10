@@ -1,0 +1,45 @@
+FROM php:7.4-apache
+
+# Apache Server Setup
+ENV APACHE_DOCUMENT_ROOT=/var/www/public
+RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
+RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
+RUN a2enmod rewrite
+RUN a2enmod ssl
+
+# Items Needed for Git, php/laravel setup, Mysql/Redis, gd/Photos
+RUN apt-get update -y && apt-get install -y openssl zip unzip git libonig-dev libicu-dev \
+    libpng-dev libjpeg62-turbo-dev libwebp-dev \
+    certbot python-certbot-apache
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+RUN docker-php-ext-configure gd --with-jpeg --with-webp
+RUN docker-php-ext-install pdo mbstring mysqli pdo_mysql intl \
+    gd
+RUN pecl install -o -f redis \
+    &&  rm -rf /tmp/pear \
+    &&  docker-php-ext-enable redis
+
+# System Level (Apache) files
+ARG PROJECT_NAME
+ENV PROJECT_NAME $PROJECT_NAME
+ARG PROJECT_DOMAIN
+ENV PROJECT_DOMAIN $PROJECT_DOMAIN
+COPY docker/apache.conf /etc/apache2/sites-available/000-default.conf
+COPY docker/ssl/options-ssl-apache.conf /etc/letsencrypt/options-ssl-apache.conf
+COPY docker/ssl/${PROJECT_NAME}.pem /etc/letsencrypt/live/${PROJECT_DOMAIN:-null}/fullchain.pem
+COPY docker/ssl/${PROJECT_NAME}.key /etc/letsencrypt/live/${PROJECT_DOMAIN:-null}/privkey.pem
+
+# Application Files
+WORKDIR /app/
+COPY . /app/
+RUN composer install
+RUN php artisan config:clear \
+    && composer dump-autoload \
+    && php artisan route:clear \
+    && php artisan view:clear
+# NOTE : IF CHOWN app/storage/log/laravel.log IS A VOLUME IN DOCKER-COMPOSE , ENSURE HOST SIDE VOLUME FILE IS SET
+# TO www-data , OR MODIFY FROM WITHIN Web-Service CONTAINER. HOST FILE WILL OVERRIDE THIS COMMAND
+RUN chown -R www-data:www-data /app/storage/
+RUN ln -s /app/public /var/www/public
+RUN php artisan storage:link
+# Note : "Php artisan up" commmand accomplished by .dockerignore down file

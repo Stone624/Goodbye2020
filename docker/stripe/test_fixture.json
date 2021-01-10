@@ -1,0 +1,43 @@
+{
+    "_meta": {
+        "template_version": 0
+    },
+    "fixtures": [
+        {
+            "name": "invoice_item",
+            "path": "/v1/invoiceitems",
+            "method": "post",
+            "params": {
+                "customer": "cus_HAf6AKOk2ZKKCr",
+                "amount":"22000",
+                "currency":"jpy",
+                "description":"Reservation 13 from Inquiry 19"
+            }
+        },
+        {
+            "name": "invoice",
+            "path": "/v1/invoices/${invoice_item:invoice}",
+            "method": "post",
+            "params": {
+                "customer": "cus_HAf6AKOk2ZKKCr",
+                "description": "(created by Stripe CLI Line Item, Updated with Stripe CLI)",
+                "metadata": {
+                    "reservation_id": "15",
+                    "inquiry_id": "21",
+                    "listing": "2",
+                    "tenant_id": "103",
+                    "checkin_date": "2020-06-01",
+                    "checkout_date": "2020-06-02",
+                    "nights": "1",
+                    "reservation_amount": "14000"
+                }
+            }
+        },
+        {
+            "name": "invoice_pay",
+            "path": "/v1/invoices/${invoice:id}/pay",
+            "method": "post"
+        }
+    ]
+}
+
