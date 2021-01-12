@@ -2,6 +2,7 @@
 # https://stackoverflow.com/questions/52429984/docker-compose-build-environment-variable
 # Note: If your service specifies a build option, variables defined in environment are not automatically visible during the build. Use the args sub-option of build to define build-time environment variables.
 # NOTE 2 : MAKE SURE IMAGE ENV VARIABLE IS LOWER CASE !!!
+# NOTE 3 : RECREATING CONTAINERS (Mysql) WITH DOCKER-COMPOSE UP WILL NOT MODIFY DATABASE !!! MUST PHYSICALLY DELETE CONTAINER. 
 version: '3'
 services:
   redis-service:
@@ -13,10 +14,10 @@ services:
     ports:
     - "3306:3306"
     environment:
-      MYSQL_DATABASE: '${DB_DATABASE}'
-      MYSQL_ROOT_PASSWORD: '${DB_PASSWORD}'
-      MYSQL_USER: '${DB_USERNAME}'
-      MYSQL_PASSWORD: '${DB_PASSWORD}'
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
 
   web-service:
     image: ${PROJECT_NAME}-web
@@ -24,9 +25,10 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile-web
-      args:
-        PROJECT_DOMAIN: ${PROJECT_NAME}
-        PROJECT_DOMAIN: ${PROJECT_DOMAIN}
+#      args: # passed in through build-args in docker-compose build (This does not work)
+#        DB_PASSWORD: ${DB_PASSWORD}
+#        PROJECT_DOMAIN: ${PROJECT_NAME}
+#        PROJECT_DOMAIN: ${PROJECT_DOMAIN}
     ports:
     - "80:80"
     - "443:443"
@@ -37,6 +39,8 @@ services:
     - mysql-service
     environment:
       CONTAINER_ROLE: web-server
+    env_file:
+      - .env.container
 
   Goodbye2020-scheduler-service:
     image: ${PROJECT_NAME}-scheduler
